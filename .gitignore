@@ -11,3 +11,5 @@ coverage
 
 # Project
 build/*.js
+
+src/examples
