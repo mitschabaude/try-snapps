@@ -4,7 +4,6 @@ import {
   Poseidon,
   circuitMain,
   public_,
-  shutdown,
 } from '@o1labs/snarkyjs';
 
 class Main extends Circuit {
@@ -20,5 +19,3 @@ const preimage = Field.random();
 const hash = Poseidon.hash([preimage]);
 const pi = Main.prove([preimage], [hash], kp);
 console.log('proof', pi);
-
-shutdown();
