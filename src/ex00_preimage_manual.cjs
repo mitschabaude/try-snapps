@@ -30,6 +30,9 @@ class Main extends Circuit {
   // console.log('Main', Main);
   // console.log('Main.prototype', Main.prototype);
 
+  const f = new Field(10);
+  console.log(f.add(3));
+
   const kp = Main.generateKeypair();
   // const kp = snarky.Circuit.generateKeypair.apply(Main);
   console.log({ kp });

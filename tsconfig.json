@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
+    "target": "ESNext",
     "module": "ES2020",
     "outDir": "./build",
     "rootDir": "./src",
+    "useDefineForClassFields": false,
     "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
     "experimentalDecorators": true,
