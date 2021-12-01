@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ES2020",
+    "module": "esnext",
     "outDir": "./build",
     "rootDir": "./src",
     "useDefineForClassFields": false,
-    "strict": true,
+    "strict": false,
+    "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
