@@ -1,26 +1,23 @@
-# Mina SNAPP: Try Snapps
+# Try Snapps
 
-This template uses TypeScript.
+Repo for me to test snarkyjs.
 
-## How to build
-
-```sh
-npm run build
-```
-
-## How to run tests
+### How to run a file:
 
 ```sh
-npm run test
-npm run testw # watch mode
+npx tsc && node build/sudoku.js
 ```
 
-## How to run coverage
+### How to iterate on a file:
+
+In one console tab, do
 
 ```sh
-npm run coverage
+npx tsc --watch
 ```
 
-## License
+In another:
 
-[Apache-2.0](LICENSE)
+```sh
+nodemon build/sudoku.js
+```
