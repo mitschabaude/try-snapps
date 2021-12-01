@@ -1,7 +1,7 @@
 let snarky = require('@o1labs/snarkyjs');
 
 (async () => {
-  await snarky.snarkyReady;
+  await snarky.isReady;
   let { Circuit } = snarky;
 
   console.log(Circuit);
