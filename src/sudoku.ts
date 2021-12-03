@@ -12,7 +12,7 @@ import {
   state,
   State,
 } from '@o1labs/snarkyjs';
-import { generateRandomSudoku } from './generate-sudoku.js';
+import { generateRandomSudoku, clone } from './generate-sudoku.js';
 
 export { main };
 
@@ -35,6 +35,21 @@ async function main() {
   await tx.send().wait();
 
   let snappState = (await Mina.getAccount(address)).snapp.appState[0];
+  console.log(`Is the Sudoku solved? ${snappState.toString()}`);
+
+  // create a wrong solution by modifying the first cell by 1
+  let noSolution = clone(solution);
+  noSolution[0][0] = (noSolution[0][0] % 9) + 1;
+  tx = Mina.transaction(account, async () => {
+    console.log('Checking wrong solution...');
+    snapp.checkSolution(new Sudoku(noSolution));
+  });
+  await tx
+    .send()
+    .wait()
+    .catch(() => console.log('Checking wrong solution failed!'));
+
+  snappState = (await Mina.getAccount(address)).snapp.appState[0];
   console.log(`Is the Sudoku solved? ${snappState.toString()}`);
 
   tx = Mina.transaction(account, async () => {

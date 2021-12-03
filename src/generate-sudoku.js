@@ -1,4 +1,4 @@
-export { generateRandomSudoku, solveSudoku, emptySudoku };
+export { generateRandomSudoku, solveSudoku, emptySudoku, clone };
 
 // let sudoku, solution;
 // for (let i = 0; i < 10; i++) {
