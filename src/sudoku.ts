@@ -9,8 +9,51 @@ import {
   PrivateKey,
   Mina,
   Bool,
+  state,
+  State,
 } from '@o1labs/snarkyjs';
 import { generateRandomSudoku } from './generate-sudoku.js';
+
+export { main };
+
+async function main() {
+  let [sudoku, solution] = generateRandomSudoku(0.5);
+  let account = PrivateKey.random();
+  let address = account.toPublicKey();
+
+  const Local = Mina.LocalBlockchain();
+  Mina.setActiveInstance(Local);
+
+  Local.addAccount(address, 1);
+
+  let snapp: SudokuSnapp;
+
+  let tx = Mina.transaction(account, async () => {
+    console.log('Deploying Sudoku...');
+    snapp = new SudokuSnapp(new Sudoku(sudoku), address);
+  });
+  await tx.send().wait();
+
+  let snappState = (await Mina.getAccount(address)).snapp.appState[0];
+  console.log(`Is the Sudoku solved? ${snappState.toString()}`);
+
+  tx = Mina.transaction(account, async () => {
+    console.log('Checking solution...');
+    snapp.checkSolution(new Sudoku(solution));
+  });
+  await tx.send().wait();
+
+  snappState = (await Mina.getAccount(address)).snapp.appState[0];
+  console.log(`Is the Sudoku solved? ${snappState.toString()}`);
+
+  if (snappState.equals(true)) {
+    console.log(
+      '=> Mina contains a proof that someone solved the Sudoku, while the solution remains hidden!'
+    );
+  }
+
+  shutdown();
+}
 
 class Sudoku extends CircuitValue {
   @matrixProp(Field, 9, 9) value: Field[][];
@@ -23,13 +66,15 @@ class Sudoku extends CircuitValue {
 
 class SudokuSnapp extends SmartContract {
   sudoku: Sudoku;
+  @state(Bool) isSolved: State<Bool>;
 
   constructor(sudoku: Sudoku, address: PublicKey) {
     super(address);
+    this.isSolved = State.init(new Bool(false));
     this.sudoku = sudoku;
   }
 
-  @method check(solutionInstance: Sudoku) {
+  @method checkSolution(solutionInstance: Sudoku) {
     let sudoku = this.sudoku.value;
     let solution = solutionInstance.value;
 
@@ -72,6 +117,9 @@ class SudokuSnapp extends SmartContract {
         Bool.or(cell.equals(0), cell.equals(solutionCell)).assertEquals(true);
       }
     }
+
+    // update the state to isSolved
+    this.isSolved.set(new Bool(true));
   }
 }
 
@@ -80,20 +128,4 @@ function divmod(k: number, n: number) {
   return [q, k - q * n];
 }
 
-let [sudoku, solution] = generateRandomSudoku(0.5);
-let account = PrivateKey.random();
-let address = account.toPublicKey();
-
-const Local = Mina.LocalBlockchain();
-Mina.setActiveInstance(Local);
-
-Local.addAccount(address, 1);
-
-let id = Mina.transaction(account, async () => {
-  let snapp = new SudokuSnapp(new Sudoku(sudoku), address);
-  snapp.check(new Sudoku(solution));
-}).send();
-
-await id.wait();
-
-shutdown();
+main();
