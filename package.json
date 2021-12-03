@@ -16,12 +16,14 @@
     "format": "prettier --write --ignore-unknown **/*"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.24",
+    "@ava/typescript": "^3.0.1",
+    "@types/jest": "^27.0.3",
+    "ava": "^4.0.0-rc.1",
     "husky": "^7.0.1",
-    "jest": "^27.0.6",
+    "jest": "^27.4.3",
     "lint-staged": "^11.0.1",
     "prettier": "^2.3.2",
-    "ts-jest": "^27.0.4",
+    "ts-jest": "^27.0.7",
     "typescript": "^4.4.4"
   },
   "lint-staged": {
@@ -31,5 +33,20 @@
   },
   "dependencies": {
     "@o1labs/snarkyjs": "file:../snarkyjs"
+  },
+  "ava": {
+    "files": [
+      "src/test/**/*",
+      "src/**/*.test.ts"
+    ],
+    "typescript": {
+      "rewritePaths": {
+        "src/": "build/"
+      },
+      "compile": "tsc"
+    },
+    "nodeArguments": [
+      "--experimental-wasm-threads"
+    ]
   }
 }
