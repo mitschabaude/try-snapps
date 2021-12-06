@@ -11,65 +11,17 @@ import {
   Bool,
   state,
   State,
+  isReady,
+  Poseidon,
 } from '@o1labs/snarkyjs';
 import { generateRandomSudoku, clone } from './generate-sudoku.js';
 
-export { main };
+await isReady;
 
-async function main() {
-  let [sudoku, solution] = generateRandomSudoku(0.5);
-  let account = PrivateKey.random();
-  let address = account.toPublicKey();
-
-  const Local = Mina.LocalBlockchain();
-  Mina.setActiveInstance(Local);
-
-  Local.addAccount(address, 1);
-
-  let snapp: SudokuSnapp;
-
-  let tx = Mina.transaction(account, async () => {
-    console.log('Deploying Sudoku...');
-    snapp = new SudokuSnapp(new Sudoku(sudoku), address);
-  });
-  await tx.send().wait();
-
-  let snappState = (await Mina.getAccount(address)).snapp.appState[0];
-  console.log(`Is the Sudoku solved? ${snappState.toString()}`);
-
-  // create a wrong solution by modifying the first cell by 1
-  let noSolution = clone(solution);
-  noSolution[0][0] = (noSolution[0][0] % 9) + 1;
-  tx = Mina.transaction(account, async () => {
-    console.log('Checking wrong solution...');
-    snapp.checkSolution(new Sudoku(noSolution));
-  });
-  await tx
-    .send()
-    .wait()
-    .catch(() => console.log('Checking wrong solution failed!'));
-
-  snappState = (await Mina.getAccount(address)).snapp.appState[0];
-  console.log(`Is the Sudoku solved? ${snappState.toString()}`);
-
-  tx = Mina.transaction(account, async () => {
-    console.log('Checking solution...');
-    snapp.checkSolution(new Sudoku(solution));
-  });
-  await tx.send().wait();
-
-  snappState = (await Mina.getAccount(address)).snapp.appState[0];
-  console.log(`Is the Sudoku solved? ${snappState.toString()}`);
-
-  if (snappState.equals(true)) {
-    console.log(
-      '=> Mina contains a proof that someone solved the Sudoku, while the solution remains hidden!'
-    );
-  }
-
-  shutdown();
+function divmod(k: number, n: number) {
+  let q = Math.floor(k / n);
+  return [q, k - q * n];
 }
-
 class Sudoku extends CircuitValue {
   @matrixProp(Field, 9, 9) value: Field[][];
 
@@ -77,41 +29,47 @@ class Sudoku extends CircuitValue {
     super();
     this.value = value.map((row) => row.map((n) => new Field(n)));
   }
+
+  hash() {
+    return Poseidon.hash(this.value.flat());
+  }
 }
 
 class SudokuSnapp extends SmartContract {
   sudoku: Sudoku;
+  @state(Field) sudokuHash: State<Field>;
   @state(Bool) isSolved: State<Bool>;
 
-  constructor(sudoku: Sudoku, address: PublicKey) {
+  constructor(address: PublicKey, sudoku: Sudoku) {
     super(address);
-    this.isSolved = State.init(new Bool(false));
     this.sudoku = sudoku;
+    this.sudokuHash = State.init(sudoku.hash());
+    this.isSolved = State.init(new Bool(false));
   }
 
-  @method checkSolution(solutionInstance: Sudoku) {
+  @method async checkSolution(solutionInstance: Sudoku) {
     let sudoku = this.sudoku.value;
     let solution = solutionInstance.value;
 
     // first, we check that the passed solution is a valid sudoku
     let False = new Bool(false);
-    let True = new Bool(true);
     let range9 = Array.from({ length: 9 }, (_, i) => i);
     let oneTo9 = range9.map((i) => new Field(i + 1));
 
-    function has1To9(array: Field[]) {
-      return oneTo9
+    function assertHas1To9(array: Field[]) {
+      oneTo9
         .map((i) => array.reduce((acc, j) => Bool.or(acc, i.equals(j)), False))
-        .reduce((acc, j) => Bool.and(acc, j), True);
+        .reduce((acc, j) => Bool.and(acc, j))
+        .assertEquals(true);
     }
 
     // check all rows
     for (let i = 0; i < 9; i++) {
-      has1To9(solution[i]).assertEquals(true);
+      assertHas1To9(solution[i]);
     }
     // check all columns
     for (let j = 0; j < 9; j++) {
-      has1To9(solution.map((row) => row[j])).assertEquals(true);
+      assertHas1To9(solution.map((row) => row[j]));
     }
     // check 3x3 squares
     for (let k = 0; k < 9; k++) {
@@ -120,7 +78,7 @@ class SudokuSnapp extends SmartContract {
         let [ii, jj] = divmod(m, 3);
         return solution[3 * i0 + ii][3 * j0 + jj];
       });
-      has1To9(square).assertEquals(true);
+      assertHas1To9(square);
     }
 
     // next, we check that the solution extends the initial sudoku
@@ -133,14 +91,64 @@ class SudokuSnapp extends SmartContract {
       }
     }
 
+    // finally, we check that the sudoku is the one that was originally deployed to the smart contract
+    let sudokuHash = await this.sudokuHash.get(); // pull the value from the blockchain
+    this.sudoku.hash().assertEquals(sudokuHash);
+
     // update the state to isSolved
     this.isSolved.set(new Bool(true));
   }
 }
 
-function divmod(k: number, n: number) {
-  let q = Math.floor(k / n);
-  return [q, k - q * n];
+let [sudoku, solution] = generateRandomSudoku(0.5);
+
+const Local = Mina.LocalBlockchain();
+Mina.setActiveInstance(Local);
+let account1 = Local.testAccounts[0].privateKey;
+let account2 = Local.testAccounts[1].privateKey;
+
+let snappAccount = PrivateKey.random();
+let snappAddress = snappAccount.toPublicKey();
+Local.addAccount(snappAddress, 100);
+
+let snapp: SudokuSnapp;
+let tx = Mina.transaction(account1, async () => {
+  console.log('Deploying Sudoku...');
+  snapp = new SudokuSnapp(snappAddress, new Sudoku(sudoku));
+});
+await tx.send().wait();
+
+let snappState = (await Mina.getAccount(snappAddress)).snapp.appState[1];
+console.log(`Is the Sudoku solved? ${snappState.toString()}`);
+
+// create a wrong solution by modifying the first cell by 1
+let noSolution = clone(solution);
+noSolution[0][0] = (noSolution[0][0] % 9) + 1;
+tx = Mina.transaction(account2, async () => {
+  console.log('Checking wrong solution...');
+  await snapp.checkSolution(new Sudoku(noSolution));
+});
+await tx
+  .send()
+  .wait()
+  .catch(() => console.log('Checking wrong solution failed!'));
+
+snappState = (await Mina.getAccount(snappAddress)).snapp.appState[1];
+console.log(`Is the Sudoku solved? ${snappState.toString()}`);
+
+tx = Mina.transaction(account2, async () => {
+  console.log('Checking solution...');
+  await snapp.checkSolution(new Sudoku(solution));
+});
+await tx.send().wait();
+
+snappState = (await Mina.getAccount(snappAddress)).snapp.appState[1];
+console.log(`Is the Sudoku solved? ${snappState.toString()}`);
+
+if (snappState.equals(true).toBoolean()) {
+  console.log(
+    '=> Mina contains a proof that someone solved the Sudoku, while the solution remains hidden!'
+  );
 }
 
-main();
+shutdown();
