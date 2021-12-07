@@ -5,7 +5,7 @@ Repo for me to test snarkyjs.
 ### How to run a file:
 
 ```sh
-npx tsc && node build/sudoku.js
+npx tsc && node dist/sudoku.js
 ```
 
 ### How to iterate on a file:
@@ -19,5 +19,5 @@ npx tsc --watch
 In another:
 
 ```sh
-nodemon build/sudoku.js
+nodemon dist/sudoku.js
 ```

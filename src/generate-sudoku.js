@@ -1,4 +1,4 @@
-export { generateRandomSudoku, solveSudoku, emptySudoku, clone };
+export { generateRandomSudoku, solveSudoku, cloneSudoku };
 
 // let sudoku, solution;
 // for (let i = 0; i < 10; i++) {
@@ -9,16 +9,20 @@ export { generateRandomSudoku, solveSudoku, emptySudoku, clone };
 // console.log(sudoku);
 // console.log(solution);
 
+/**
+ * Generates a random 9x9 sudoku. Cells are either filled out (1,...,9) or empty (0).
+ *
+ * @param {number?} difficulty - Number between 0 (easiest = full sudoku) and 1 (hardest = empty sudoku)
+ * @returns {number[][]} -
+ */
 function generateRandomSudoku(difficulty = 0.5) {
-  let solution = solveSudoku(emptySudoku(), false);
+  let solution = solveSudokuInternal(emptySudoku(), false);
   let partial = deleteRandomValues(solution, difficulty);
-  // solve sudoku a second time to get the deterministic solution
-  solution = solveSudoku(partial, true);
-  return [partial, solution];
+  return partial;
 }
 
 function deleteRandomValues(sudoku, p) {
-  // p \in (0,1) ... probability to delete a value
+  // p \in [0,1] ... probability to delete a value
   return sudoku.map((row) => row.map((x) => (Math.random() < p ? 0 : x)));
 }
 
@@ -27,13 +31,23 @@ function emptySudoku() {
   return Array.from({ length: 9 }, () => Array(9).fill(0));
 }
 
-function solveSudoku(sudoku, deterministic = false, possible) {
+/**
+ * Solve a given sudoku. Returns undefined if there is no solution.
+ *
+ * @param {number[][]} sudoku - The input sudoku with some cell values equal to zero
+ * @returns {number[][] | undefined} - The full sudoku, or undefined if no solution exists
+ */
+function solveSudoku(sudoku) {
+  return solveSudokuInternal(sudoku, true);
+}
+
+function solveSudokuInternal(sudoku, deterministic, possible) {
   // find *a* compatible solution to the sudoku - not checking for uniqueness
   // if deterministic = true: always take the smallest possible cell value
   // if deterministic = false: take random compatible values
   if (possible === undefined) {
     possible = possibleFromSudoku(sudoku);
-    sudoku = clone(sudoku);
+    sudoku = cloneSudoku(sudoku);
   }
   while (true) {
     let [i, j, n] = cellWithFewestPossible(sudoku, possible);
@@ -58,12 +72,12 @@ function solveSudoku(sudoku, deterministic = false, possible) {
       if (x === 0) return;
 
       // console.log('chose', x, 'at', i, j);
-      let sudoku_ = clone(sudoku);
-      let possible_ = clone(possible);
+      let sudoku_ = cloneSudoku(sudoku);
+      let possible_ = cloneSudoku(possible);
       sudoku_[i][j] = x;
       fixValue(i, j, x, possible_);
 
-      let solution = solveSudoku(sudoku_, deterministic, possible_);
+      let solution = solveSudokuInternal(sudoku_, deterministic, possible_);
 
       // found a solution? return it!
       if (solution !== undefined) return solution;
@@ -182,10 +196,17 @@ function divmod(k, n) {
   return [q, k - q * n];
 }
 
-function clone(array) {
-  if (Array.isArray(array[0])) {
-    return array.map((x) => clone(x));
+/**
+ * Clones a sudoku.
+ *
+ * @template T
+ * @param {T[]} sudoku
+ * @returns {T[]}
+ */
+function cloneSudoku(sudoku) {
+  if (Array.isArray(sudoku[0])) {
+    return sudoku.map((x) => cloneSudoku(x));
   } else {
-    return [...array];
+    return [...sudoku];
   }
 }
