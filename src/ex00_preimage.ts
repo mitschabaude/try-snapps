@@ -4,7 +4,10 @@ import {
   Poseidon,
   circuitMain,
   public_,
-} from '@o1labs/snarkyjs';
+  isReady,
+} from 'snarkyjs';
+
+await isReady;
 
 class Main extends Circuit {
   @circuitMain

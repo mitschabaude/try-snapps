@@ -1,4 +1,4 @@
-let snarky = require('@o1labs/snarkyjs');
+let snarky = require('snarkyjs');
 
 (async () => {
   await snarky.isReady;

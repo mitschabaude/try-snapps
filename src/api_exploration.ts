@@ -8,7 +8,7 @@ import {
   Bool,
   Group,
   shutdown,
-} from '@o1labs/snarkyjs';
+} from 'snarkyjs';
 
 /* This file demonstrates the classes and functions available in snarky.js */
 

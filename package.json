@@ -32,7 +32,7 @@
     ]
   },
   "dependencies": {
-    "@o1labs/snarkyjs": "file:../snarkyjs"
+    "snarkyjs": "file:../snarkyjs"
   },
   "ava": {
     "files": [

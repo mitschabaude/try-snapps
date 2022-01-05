@@ -1,3 +1,3 @@
-import { Circuit } from '@o1labs/snarkyjs';
+import { Circuit } from 'snarkyjs';
 
 console.log(Circuit);

@@ -9,7 +9,7 @@ import {
   CircuitValue,
   Signature,
   shutdown,
-} from '@o1labs/snarkyjs';
+} from 'snarkyjs';
 
 class Witness extends CircuitValue {
   @prop signature: Signature;

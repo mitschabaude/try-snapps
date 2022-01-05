@@ -1,4 +1,4 @@
-let snarky = require('@o1labs/snarkyjs');
+let snarky = require('snarkyjs');
 let { Circuit, Poseidon } = snarky;
 
 class Main extends Circuit {

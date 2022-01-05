@@ -13,7 +13,7 @@ import {
   Mina,
   Party,
   shutdown,
-} from '@o1labs/snarkyjs';
+} from 'snarkyjs';
 
 const debug = false;
 

@@ -17,7 +17,7 @@ import {
   Signature,
   CircuitValue,
   AsFieldElements,
-} from '@o1labs/snarkyjs';
+} from 'snarkyjs';
 
 class Board implements AsFieldElements<Board> {
   board: Optional<Bool>[][];
